@@ -1,3 +1,9 @@
 gateway:
   admin:
     token: test-admin-token
+  providers:
+    fake:
+      latency-ms:
+        fake-fast: 0
+        fake-slow: 0
+      error-rate: 0.0

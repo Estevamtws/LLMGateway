@@ -20,3 +20,9 @@ spring:
 gateway:
   admin:
     token: ${ADMIN_TOKEN:}
+  providers:
+    fake:
+      latency-ms:
+        fake-fast: ${FAKE_FAST_LATENCY_MS:50}
+        fake-slow: ${FAKE_SLOW_LATENCY_MS:1000}
+      error-rate: ${FAKE_ERROR_RATE:0.0}
