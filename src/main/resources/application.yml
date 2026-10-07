@@ -1,6 +1,10 @@
 spring:
   application:
     name: llm-gateway
+  # Lets local runs (IDE, mvn spring-boot:run) read the same .env file that Docker Compose uses.
+  # Real environment variables still take precedence over values from .env.
+  config:
+    import: optional:file:.env[.properties]
   threads:
     virtual:
       enabled: true
