@@ -7,5 +7,5 @@ import java.util.UUID;
  */
 public record AuthenticatedKey(UUID apiKeyId, UUID clientId) {
 
-    public static final String REQUEST_ATTRIBUTE = AuthenticatedKey.class.getName();
+    public static final String REQUEST_ATTRIBUTE = "com.llmgateway.auth.AuthenticatedKey";
 }
