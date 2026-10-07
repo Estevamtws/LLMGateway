@@ -14,3 +14,9 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+gateway:
+  admin:
+    token: ${ADMIN_TOKEN:}
