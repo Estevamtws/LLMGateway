@@ -42,3 +42,12 @@ gateway:
       minimum-number-of-calls: ${CB_MINIMUM_NUMBER_OF_CALLS:10}
       wait-in-open-ms: ${CB_WAIT_IN_OPEN_MS:30000}
       permitted-calls-in-half-open: 3
+  # USD per million tokens. Every model a provider serves needs an entry, or startup fails.
+  pricing:
+    models:
+      fake-fast:
+        input-per-million: 0.10
+        output-per-million: 0.40
+      fake-slow:
+        input-per-million: 1.00
+        output-per-million: 4.00

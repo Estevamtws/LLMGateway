@@ -15,3 +15,11 @@ gateway:
       # High enough that failure tests sharing this context never open the circuit.
       minimum-number-of-calls: 1000
       sliding-window-size: 1000
+  pricing:
+    models:
+      test-error:
+        input-per-million: 1.00
+        output-per-million: 1.00
+      test-timeout:
+        input-per-million: 1.00
+        output-per-million: 1.00

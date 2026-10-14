@@ -7,16 +7,22 @@ import com.llmgateway.provider.ChatResult;
 import com.llmgateway.provider.LlmProvider;
 import com.llmgateway.provider.ProviderUnavailableException;
 import com.llmgateway.provider.resilience.ResilientProviderCaller;
+import com.llmgateway.usage.UsageRecorder;
+import com.llmgateway.usage.UsageStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ChatCompletionServiceTest {
@@ -30,8 +36,8 @@ class ChatCompletionServiceTest {
             }
 
             @Override
-            public boolean supports(String model) {
-                return true;
+            public Set<String> models() {
+                return Set.of("m");
             }
 
             @Override
@@ -41,8 +47,9 @@ class ChatCompletionServiceTest {
         };
         ResilientProviderCaller caller = mock(ResilientProviderCaller.class);
         when(caller.complete(any(), any())).thenThrow(new ProviderUnavailableException("open", null));
+        UsageRecorder recorder = mock(UsageRecorder.class);
         ChatCompletionService service =
-                new ChatCompletionService(new ProviderRouter(List.of(provider)), caller, Clock.systemUTC());
+                new ChatCompletionService(new ProviderRouter(List.of(provider)), caller, recorder, Clock.systemUTC());
         var request = new ChatCompletionRequest("m",
                 List.of(new ChatCompletionRequest.Message("user", "Hi")), null, null, null);
 
@@ -52,5 +59,6 @@ class ChatCompletionServiceTest {
                     assertThat(e.type()).isEqualTo("api_error");
                     assertThat(e.code()).isEqualTo("provider_unavailable");
                 });
+        verify(recorder).record(any(), eq("p"), eq("m"), eq(0), eq(0), anyLong(), eq(UsageStatus.CIRCUIT_OPEN));
     }
 }

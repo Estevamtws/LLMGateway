@@ -9,6 +9,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -18,7 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Order(0)
 public class FakeProvider implements LlmProvider {
 
-    public static final List<String> MODELS = List.of("fake-fast", "fake-slow");
+    public static final Set<String> MODELS = Set.of("fake-fast", "fake-slow");
 
     private final FakeProviderProperties properties;
 
@@ -32,8 +33,8 @@ public class FakeProvider implements LlmProvider {
     }
 
     @Override
-    public boolean supports(String model) {
-        return MODELS.contains(model);
+    public Set<String> models() {
+        return MODELS;
     }
 
     @Override

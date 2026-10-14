@@ -38,11 +38,6 @@ class ProviderRouterTest {
     private record StubProvider(String name, Set<String> models) implements LlmProvider {
 
         @Override
-        public boolean supports(String model) {
-            return models.contains(model);
-        }
-
-        @Override
         public ChatResult complete(ChatRequest request) {
             throw new UnsupportedOperationException();
         }

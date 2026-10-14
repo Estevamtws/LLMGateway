@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -191,8 +192,8 @@ class ResilientProviderCallerTest {
         }
 
         @Override
-        public boolean supports(String model) {
-            return true;
+        public Set<String> models() {
+            return Set.of("m");
         }
 
         @Override

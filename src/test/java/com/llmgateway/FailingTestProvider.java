@@ -6,6 +6,8 @@ import com.llmgateway.provider.LlmProvider;
 import com.llmgateway.provider.ProviderException;
 import com.llmgateway.provider.ProviderTimeoutException;
 
+import java.util.Set;
+
 /**
  * Test-only provider: {@code test-error} fails with a provider error, {@code test-timeout} times out.
  */
@@ -20,8 +22,8 @@ public class FailingTestProvider implements LlmProvider {
     }
 
     @Override
-    public boolean supports(String model) {
-        return ERROR_MODEL.equals(model) || TIMEOUT_MODEL.equals(model);
+    public Set<String> models() {
+        return Set.of(ERROR_MODEL, TIMEOUT_MODEL);
     }
 
     @Override

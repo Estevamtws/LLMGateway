@@ -6,6 +6,9 @@ import com.llmgateway.client.Client;
 import com.llmgateway.client.ClientRepository;
 import com.llmgateway.client.ClientService;
 import com.llmgateway.client.ClientStatus;
+import com.llmgateway.usage.UsageRecord;
+import com.llmgateway.usage.UsageRecordRepository;
+import com.llmgateway.usage.UsageStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +17,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.util.List;
 import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,6 +39,8 @@ class ChatCompletionControllerTest {
     ClientService clientService;
     @Autowired
     ClientRepository clients;
+    @Autowired
+    UsageRecordRepository usageRecords;
 
     private Client client;
     private ClientService.IssuedKey key;
@@ -58,6 +66,23 @@ class ChatCompletionControllerTest {
                 .andExpect(jsonPath("$.usage.prompt_tokens").value(2))
                 .andExpect(jsonPath("$.usage.completion_tokens").value(7))
                 .andExpect(jsonPath("$.usage.total_tokens").value(9));
+
+        UsageRecord record = singleUsageRecord();
+        assertThat(record.getProvider()).isEqualTo("fake");
+        assertThat(record.getModel()).isEqualTo("fake-fast");
+        assertThat(record.getInputTokens()).isEqualTo(2);
+        assertThat(record.getOutputTokens()).isEqualTo(7);
+        // (2 * 0.10 + 7 * 0.40) / 1,000,000
+        assertThat(record.getCostUsd()).isEqualByComparingTo("0.00000300");
+        assertThat(record.getLatencyMs()).isGreaterThanOrEqualTo(0);
+        assertThat(record.getStatus()).isEqualTo(UsageStatus.SUCCESS);
+    }
+
+    @Test
+    void rejectedRequestsDoNotProduceUsageRecords() throws Exception {
+        complete(body("nope")).andExpect(status().isBadRequest());
+
+        assertThat(usageRecords.findByApiKeyId(key.key().getId())).isEmpty();
     }
 
     @Test
@@ -145,6 +170,8 @@ class ChatCompletionControllerTest {
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.error.type").value("api_error"))
                 .andExpect(jsonPath("$.error.code").value("provider_error"));
+
+        assertFailureRecorded(FailingTestProvider.ERROR_MODEL, UsageStatus.PROVIDER_ERROR);
     }
 
     @Test
@@ -152,6 +179,24 @@ class ChatCompletionControllerTest {
         complete(body(FailingTestProvider.TIMEOUT_MODEL))
                 .andExpect(status().isGatewayTimeout())
                 .andExpect(jsonPath("$.error.code").value("provider_timeout"));
+
+        assertFailureRecorded(FailingTestProvider.TIMEOUT_MODEL, UsageStatus.TIMEOUT);
+    }
+
+    private void assertFailureRecorded(String model, UsageStatus status) {
+        UsageRecord record = singleUsageRecord();
+        assertThat(record.getModel()).isEqualTo(model);
+        assertThat(record.getProvider()).isEqualTo("test");
+        assertThat(record.getInputTokens()).isZero();
+        assertThat(record.getOutputTokens()).isZero();
+        assertThat(record.getCostUsd()).isEqualByComparingTo("0");
+        assertThat(record.getStatus()).isEqualTo(status);
+    }
+
+    private UsageRecord singleUsageRecord() {
+        List<UsageRecord> records = usageRecords.findByApiKeyId(key.key().getId());
+        assertThat(records).hasSize(1);
+        return records.getFirst();
     }
 
     private ResultActions complete(String body) throws Exception {
