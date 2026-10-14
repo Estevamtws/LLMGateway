@@ -42,7 +42,8 @@ class OpenAiProviderTest {
     void start() {
         server = new WireMockServer(options().dynamicPort());
         server.start();
-        provider = providerFor(server.baseUrl() + "/v1/", 300);
+        // Generous timeout: the first request to a fresh WireMock server can take well over 300 ms.
+        provider = providerFor(server.baseUrl() + "/v1/", 5_000);
     }
 
     @AfterEach
@@ -93,9 +94,10 @@ class OpenAiProviderTest {
 
     @Test
     void slowResponseIsTimeout() {
-        server.stubFor(post(PATH).willReturn(okJson(SUCCESS).withFixedDelay(2000)));
+        server.stubFor(post(PATH).willReturn(okJson(SUCCESS).withFixedDelay(3000)));
+        OpenAiProvider impatient = providerFor(server.baseUrl() + "/v1", 300);
 
-        assertThatThrownBy(() -> provider.complete(request())).isInstanceOf(ProviderTimeoutException.class);
+        assertThatThrownBy(() -> impatient.complete(request())).isInstanceOf(ProviderTimeoutException.class);
     }
 
     @Test
@@ -140,7 +142,7 @@ class OpenAiProviderTest {
         try (ServerSocket socket = new ServerSocket(0)) {
             closedPort = socket.getLocalPort();
         }
-        OpenAiProvider unreachable = providerFor("http://localhost:" + closedPort + "/v1", 300);
+        OpenAiProvider unreachable = providerFor("http://localhost:" + closedPort + "/v1", 5_000);
 
         assertThatThrownBy(() -> unreachable.complete(request()))
                 .isInstanceOfSatisfying(ProviderException.class, e -> assertThat(e.isRetryable()).isTrue());

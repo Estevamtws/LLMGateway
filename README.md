@@ -50,6 +50,17 @@ To use another database (for example [Neon](https://neon.tech)), set `DATABASE_U
 than the `-pooler` one, because Flyway's migration lock does not work through PgBouncer in
 transaction mode.
 
+### In the browser (GitHub Codespaces)
+
+The repository includes a dev container (`.devcontainer/`) with Java 21, Maven, and Docker, so the
+whole system runs in a Codespace with nothing installed locally. Create a `.env` there as above,
+then run `docker compose up --build` and open the forwarded port 8080.
+
+### Hosting (Render, Railway, Fly.io)
+
+Deploy the `Dockerfile` and set `ADMIN_TOKEN`, `DATABASE_URL`, `DATABASE_USERNAME`, and
+`DATABASE_PASSWORD` (for example from Neon). The app listens on `PORT` when the platform sets it.
+
 ## Web console
 
 The gateway serves a small console at `http://localhost:8080/`, written in plain HTML, CSS, and

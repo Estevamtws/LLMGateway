@@ -1,3 +1,7 @@
+server:
+  # Hosting platforms such as Render and Railway pass the port in PORT.
+  port: ${PORT:8080}
+
 spring:
   application:
     name: llm-gateway

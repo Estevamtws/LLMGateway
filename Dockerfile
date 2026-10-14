@@ -11,4 +11,5 @@ RUN useradd --system --uid 1001 gateway
 COPY --from=build /app/target/llm-gateway-*.jar app.jar
 USER gateway
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# Small hosting plans have little memory; let the heap use most of it.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]
