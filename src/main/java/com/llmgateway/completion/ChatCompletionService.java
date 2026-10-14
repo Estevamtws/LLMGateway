@@ -8,6 +8,8 @@ import com.llmgateway.provider.ChatResult;
 import com.llmgateway.provider.LlmProvider;
 import com.llmgateway.provider.ProviderException;
 import com.llmgateway.provider.ProviderTimeoutException;
+import com.llmgateway.provider.ProviderUnavailableException;
+import com.llmgateway.provider.resilience.ResilientProviderCaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -23,10 +25,12 @@ public class ChatCompletionService {
     private static final Logger log = LoggerFactory.getLogger(ChatCompletionService.class);
 
     private final ProviderRouter router;
+    private final ResilientProviderCaller providerCaller;
     private final Clock clock;
 
-    public ChatCompletionService(ProviderRouter router, Clock clock) {
+    public ChatCompletionService(ProviderRouter router, ResilientProviderCaller providerCaller, Clock clock) {
         this.router = router;
+        this.providerCaller = providerCaller;
         this.clock = clock;
     }
 
@@ -36,7 +40,11 @@ public class ChatCompletionService {
 
         ChatResult result;
         try {
-            result = provider.complete(chatRequest);
+            result = providerCaller.complete(provider, chatRequest);
+        } catch (ProviderUnavailableException e) {
+            log.warn("Provider {} rejected by open circuit breaker for model {}", provider.name(), chatRequest.model());
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "api_error", "provider_unavailable",
+                    "The provider is temporarily unavailable");
         } catch (ProviderTimeoutException e) {
             log.warn("Provider {} timed out for model {}", provider.name(), chatRequest.model());
             throw new ApiException(HttpStatus.GATEWAY_TIMEOUT, "api_error", "provider_timeout",

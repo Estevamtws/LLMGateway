@@ -7,3 +7,11 @@ gateway:
         fake-fast: 0
         fake-slow: 0
       error-rate: 0.0
+  resilience:
+    retry:
+      max-attempts: 3
+      initial-wait-ms: 1
+    circuit-breaker:
+      # High enough that failure tests sharing this context never open the circuit.
+      minimum-number-of-calls: 1000
+      sliding-window-size: 1000

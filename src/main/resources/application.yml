@@ -30,3 +30,15 @@ gateway:
         fake-fast: ${FAKE_FAST_LATENCY_MS:50}
         fake-slow: ${FAKE_SLOW_LATENCY_MS:1000}
       error-rate: ${FAKE_ERROR_RATE:0.0}
+  resilience:
+    retry:
+      max-attempts: ${RETRY_MAX_ATTEMPTS:3}
+      initial-wait-ms: ${RETRY_INITIAL_WAIT_MS:200}
+      multiplier: 2.0
+      retry-on-timeout: ${RETRY_ON_TIMEOUT:false}
+    circuit-breaker:
+      failure-rate-threshold: ${CB_FAILURE_RATE_THRESHOLD:50}
+      sliding-window-size: ${CB_SLIDING_WINDOW_SIZE:20}
+      minimum-number-of-calls: ${CB_MINIMUM_NUMBER_OF_CALLS:10}
+      wait-in-open-ms: ${CB_WAIT_IN_OPEN_MS:30000}
+      permitted-calls-in-half-open: 3
