@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -89,6 +90,33 @@ class ClientAdminControllerTest {
         assertThat(stored.getKeyHash()).isEqualTo(KeyHasher.sha256Hex(plaintext));
         assertThat(stored.getKeyHash()).doesNotContain(plaintext.substring(3));
         assertThat(stored.isActive()).isTrue();
+    }
+
+    @Test
+    void listsClientsWithKeyMetadataButNeverTheKeyItself() throws Exception {
+        String name = uniqueName();
+        String clientId = createClient(name);
+        String issued = mvc.perform(post("/admin/clients/{id}/keys", clientId).header(ADMIN_HEADER, ADMIN_TOKEN))
+                .andReturn().getResponse().getContentAsString();
+        String plaintext = JsonPath.read(issued, "$.key");
+        String keyId = JsonPath.read(issued, "$.id");
+        mvc.perform(delete("/admin/keys/{id}", keyId).header(ADMIN_HEADER, ADMIN_TOKEN));
+
+        String body = mvc.perform(get("/admin/clients").header(ADMIN_HEADER, ADMIN_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == '" + clientId + "')].name").value(name))
+                .andExpect(jsonPath("$[?(@.id == '" + clientId + "')].keys[0].id").value(keyId))
+                .andExpect(jsonPath("$[?(@.id == '" + clientId + "')].keys[0].active").value(false))
+                .andExpect(jsonPath("$[?(@.id == '" + clientId + "')].keys[0].revoked_at").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(body).doesNotContain(plaintext).doesNotContain(KeyHasher.sha256Hex(plaintext));
+        assertThat(body).doesNotContain("key_hash");
+    }
+
+    @Test
+    void listingClientsRequiresAdminToken() throws Exception {
+        mvc.perform(get("/admin/clients")).andExpect(status().isUnauthorized());
     }
 
     @Test

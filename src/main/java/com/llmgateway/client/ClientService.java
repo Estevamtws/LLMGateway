@@ -7,7 +7,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Sort;
+
 import java.time.Clock;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Service
@@ -47,6 +52,21 @@ public class ClientService {
         }
     }
 
+    /**
+     * Every client, newest first, with its keys. Key hashes and plaintext are never part of this view.
+     */
+    @Transactional(readOnly = true)
+    public List<ClientWithKeys> listClients() {
+        List<Client> all = clients.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+        Map<UUID, List<ApiKey>> keysByClient = apiKeys
+                .findByClientIdInOrderByCreatedAtDesc(all.stream().map(Client::getId).toList())
+                .stream()
+                .collect(Collectors.groupingBy(key -> key.getClient().getId()));
+        return all.stream()
+                .map(client -> new ClientWithKeys(client, keysByClient.getOrDefault(client.getId(), List.of())))
+                .toList();
+    }
+
     @Transactional
     public IssuedKey issueKey(UUID clientId) {
         Client client = clients.findById(clientId)
@@ -65,6 +85,9 @@ public class ClientService {
 
     private static ApiException nameTaken(String name) {
         return ApiException.conflict("client_name_taken", "A client named '" + name + "' already exists");
+    }
+
+    public record ClientWithKeys(Client client, List<ApiKey> keys) {
     }
 
     /**

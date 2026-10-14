@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Gateway</title>
+  <meta name="description" content="Console do LLM Gateway: playground, clientes, chaves e uso.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%23e11d2e'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    // Apply the saved or preferred theme before first paint, so there is no flash.
+    (function () {
+      var theme;
+      try { theme = localStorage.getItem('gw.theme'); } catch (e) { theme = null; }
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="#playground" aria-label="LLM Gateway, início">
+        <span class="brand__dot" aria-hidden="true"></span>
+        <span class="brand__name">LLM Gateway</span>
+      </a>
+
+      <nav class="tabs" role="tablist" aria-label="Seções">
+        <button class="tabs__tab" role="tab" data-view="playground" aria-selected="true">Playground</button>
+        <button class="tabs__tab" role="tab" data-view="clients" aria-selected="false">Clientes</button>
+        <button class="tabs__tab" role="tab" data-view="usage" aria-selected="false">Uso</button>
+        <span class="tabs__indicator" aria-hidden="true"></span>
+      </nav>
+
+      <div class="admin-status" data-admin-status hidden>
+        <span class="admin-status__dot" aria-hidden="true"></span>
+        <span>Admin</span>
+        <button class="link-button" data-action="disconnect">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Playground -->
+    <section class="view is-active" data-view-panel="playground" role="tabpanel" aria-label="Playground">
+      <div class="view__header">
+        <h1>Playground</h1>
+        <p class="muted">Teste o endpoint <code>/v1/chat/completions</code> com uma chave do gateway.</p>
+      </div>
+
+      <div class="playground">
+        <aside class="panel settings">
+          <label class="field">
+            <span class="field__label">Chave do gateway</span>
+            <span class="field__control field__control--with-action">
+              <input type="password" data-input="apiKey" placeholder="gw_..." autocomplete="off" spellcheck="false">
+              <button class="icon-button" data-action="toggle-key" aria-label="Mostrar chave" title="Mostrar chave">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Modelo</span>
+            <input data-input="model" list="model-options" value="fake-fast" spellcheck="false">
+            <datalist id="model-options">
+              <option value="fake-fast"></option>
+              <option value="fake-slow"></option>
+            </datalist>
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Máx. tokens</span>
+              <input type="number" data-input="maxTokens" min="1" placeholder="sem limite">
+            </label>
+            <label class="field">
+              <span class="field__label">Temperatura <output data-output="temperature">1.0</output></span>
+              <input type="range" data-input="temperature" min="0" max="2" step="0.1" value="1">
+            </label>
+          </div>
+
+          <div class="session-stats" data-session-stats>
+            <div><span class="muted">Requisições</span><strong data-stat="requests">0</strong></div>
+            <div><span class="muted">Tokens</span><strong data-stat="tokens">0</strong></div>
+            <div><span class="muted">Última latência</span><strong data-stat="latency">-</strong></div>
+          </div>
+
+          <button class="button button--ghost" data-action="clear-chat">Limpar conversa</button>
+        </aside>
+
+        <div class="panel chat">
+          <ol class="chat__messages" data-messages aria-live="polite">
+            <li class="chat__empty" data-chat-empty>
+              <span class="chat__empty-mark" aria-hidden="true"></span>
+              <p>Envie uma mensagem para começar.</p>
+              <p class="muted">Os modelos <code>fake-*</code> respondem sem custo e sem rede.</p>
+            </li>
+          </ol>
+          <form class="composer" data-form="chat">
+            <textarea data-input="prompt" rows="1" placeholder="Escreva uma mensagem" aria-label="Mensagem"></textarea>
+            <button class="button button--primary composer__send" type="submit" aria-label="Enviar">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </form>
+          <p class="composer__hint muted">Enter envia, Shift + Enter quebra a linha.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Clientes -->
+    <section class="view" data-view-panel="clients" role="tabpanel" aria-label="Clientes" hidden>
+      <div class="view__header">
+        <h1>Clientes</h1>
+        <p class="muted">Crie clientes, gere chaves e revogue o que não for mais usado.</p>
+      </div>
+
+      <div data-admin-gate></div>
+
+      <div class="admin-only" data-admin-content hidden>
+        <div class="toolbar">
+          <form class="inline-form" data-form="create-client">
+            <input data-input="clientName" placeholder="Nome do novo cliente" maxlength="100" required aria-label="Nome do novo cliente">
+            <button class="button button--primary" type="submit">Criar cliente</button>
+          </form>
+          <input class="search" type="search" data-input="clientSearch" placeholder="Filtrar" aria-label="Filtrar clientes">
+        </div>
+        <ul class="client-list" data-client-list></ul>
+      </div>
+    </section>
+
+    <!-- Uso -->
+    <section class="view" data-view-panel="usage" role="tabpanel" aria-label="Uso" hidden>
+      <div class="view__header">
+        <h1>Uso</h1>
+        <p class="muted">Requisições, tokens e custo por modelo.</p>
+      </div>
+
+      <div data-admin-gate></div>
+
+      <div class="admin-only" data-admin-content hidden>
+        <form class="usage-filters panel" data-form="usage">
+          <label class="field">
+            <span class="field__label">Cliente</span>
+            <select data-input="usageClient" required></select>
+          </label>
+          <label class="field">
+            <span class="field__label">De</span>
+            <input type="date" data-input="usageFrom">
+          </label>
+          <label class="field">
+            <span class="field__label">Até</span>
+            <input type="date" data-input="usageTo">
+          </label>
+          <div class="chips" role="group" aria-label="Períodos rápidos">
+            <button type="button" class="chip" data-range="7">7 dias</button>
+            <button type="button" class="chip" data-range="30">30 dias</button>
+            <button type="button" class="chip" data-range="all">Tudo</button>
+          </div>
+        </form>
+
+        <div class="stats" data-usage-stats>
+          <div class="stat"><span class="stat__label">Requisições</span><span class="stat__value" data-total="requests">0</span></div>
+          <div class="stat"><span class="stat__label">Tokens de entrada</span><span class="stat__value" data-total="input">0</span></div>
+          <div class="stat"><span class="stat__label">Tokens de saída</span><span class="stat__value" data-total="output">0</span></div>
+          <div class="stat stat--accent"><span class="stat__label">Custo (USD)</span><span class="stat__value" data-total="cost">0</span></div>
+        </div>
+
+        <div class="panel table-panel">
+          <table class="usage-table">
+            <thead>
+              <tr>
+                <th scope="col">Modelo</th>
+                <th scope="col" class="num">Requisições</th>
+                <th scope="col" class="num">Entrada</th>
+                <th scope="col" class="num">Saída</th>
+                <th scope="col" class="num">Custo (USD)</th>
+                <th scope="col" class="share-col"><span class="visually-hidden">Parte do custo</span></th>
+              </tr>
+            </thead>
+            <tbody data-usage-rows></tbody>
+          </table>
+          <p class="empty muted" data-usage-empty>Nenhum uso no período.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <template data-template="admin-gate">
+    <form class="gate panel" data-form="admin-login">
+      <span class="gate__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </span>
+      <h2>Acesso de administrador</h2>
+      <p class="muted">Informe o <code>ADMIN_TOKEN</code> do gateway. Ele fica salvo só nesta aba.</p>
+      <input type="password" data-input="adminToken" placeholder="Token de administrador" autocomplete="off" required aria-label="Token de administrador">
+      <button class="button button--primary" type="submit">Entrar</button>
+    </form>
+  </template>
+
+  <dialog class="dialog" data-dialog="new-key" aria-labelledby="new-key-title">
+    <form method="dialog" class="dialog__body">
+      <h2 id="new-key-title">Nova chave gerada</h2>
+      <p class="muted">Copie agora. Por segurança, ela não será mostrada de novo.</p>
+      <div class="key-box">
+        <code data-new-key></code>
+        <button type="button" class="button button--primary" data-action="copy-key">Copiar</button>
+      </div>
+      <div class="dialog__actions">
+        <button type="button" class="button button--ghost" data-action="use-key">Usar no Playground</button>
+        <button class="button" value="close">Pronto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" data-toasts aria-live="polite"></div>
+
+  <button class="theme-toggle" data-action="toggle-theme" aria-label="Ativar modo escuro" title="Alternar tema">
+    <svg class="theme-toggle__sun" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+    <svg class="theme-toggle__moon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/>
+    </svg>
+  </button>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

@@ -12,6 +12,7 @@ handling. The gateway centralizes that.
 ## Contents
 
 - [Quick start](#quick-start)
+- [Web console](#web-console)
 - [Using the API](#using-the-api)
 - [Configuration](#configuration)
 - [Architecture decisions](#architecture-decisions)
@@ -48,6 +49,21 @@ To use another database (for example [Neon](https://neon.tech)), set `DATABASE_U
 `jdbc:postgresql://<host>/<database>?sslmode=require`. With Neon, use the direct endpoint rather
 than the `-pooler` one, because Flyway's migration lock does not work through PgBouncer in
 transaction mode.
+
+## Web console
+
+The gateway serves a small console at `http://localhost:8080/`, written in plain HTML, CSS, and
+JavaScript with no build step (`src/main/resources/static`).
+
+- **Playground:** chat with any model through `/v1/chat/completions` using a gateway key, and see
+  tokens and latency for each answer.
+- **Clients:** sign in with the admin token, create clients, issue keys (shown once, with copy and
+  "use in Playground"), and revoke keys.
+- **Usage:** totals and cost per model for a client, with date filters.
+
+The admin token and the gateway key are kept in `sessionStorage`, so they are forgotten when the
+tab closes. Light and dark themes follow the system setting until you pick one with the round button
+in the bottom right corner.
 
 ## Using the API
 
@@ -132,6 +148,7 @@ curl -X DELETE http://localhost:8080/admin/keys/<key-id> -H "X-Admin-Token: $ADM
 | Route | Auth | Purpose | Success |
 |---|---|---|---|
 | `POST /v1/chat/completions` | `Authorization: Bearer <key>` | Chat completion | 200 |
+| `GET /admin/clients` | `X-Admin-Token` | List clients with their keys (prefix and status only) | 200 |
 | `POST /admin/clients` | `X-Admin-Token` | Create a client | 201 |
 | `POST /admin/clients/{id}/keys` | `X-Admin-Token` | Issue a key | 201 |
 | `DELETE /admin/keys/{id}` | `X-Admin-Token` | Revoke a key | 204 |
