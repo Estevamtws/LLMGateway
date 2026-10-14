@@ -30,6 +30,14 @@ gateway:
         fake-fast: ${FAKE_FAST_LATENCY_MS:50}
         fake-slow: ${FAKE_SLOW_LATENCY_MS:1000}
       error-rate: ${FAKE_ERROR_RATE:0.0}
+    # Any OpenAI-compatible API. Disabled unless OPENAI_API_KEY is set.
+    openai:
+      name: ${OPENAI_PROVIDER_NAME:openai}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      api-key: ${OPENAI_API_KEY:}
+      models: ${OPENAI_MODELS:}
+      connect-timeout-ms: ${OPENAI_CONNECT_TIMEOUT_MS:2000}
+      read-timeout-ms: ${OPENAI_READ_TIMEOUT_MS:30000}
   resilience:
     retry:
       max-attempts: ${RETRY_MAX_ATTEMPTS:3}
@@ -51,3 +59,8 @@ gateway:
       fake-slow:
         input-per-million: 1.00
         output-per-million: 4.00
+      # Add one entry per model in OPENAI_MODELS, with the provider's current prices, e.g.:
+      # gpt-4o-mini:
+      #   input-per-million: 0.15
+      #   output-per-million: 0.60
+      # Use brackets for names with dots or slashes: "[openai/gpt-4.1]":

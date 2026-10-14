@@ -25,6 +25,9 @@ services:
       DATABASE_USERNAME: gateway
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       ADMIN_TOKEN: ${ADMIN_TOKEN:?Set ADMIN_TOKEN in .env (see .env.example)}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODELS: ${OPENAI_MODELS:-}
     ports:
       - "8080:8080"
 
