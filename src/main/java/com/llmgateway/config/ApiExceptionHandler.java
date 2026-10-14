@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -41,8 +43,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
                                                              HttpStatusCode statusCode, WebRequest request) {
         String type = statusCode.is4xxClientError() ? "invalid_request_error" : "api_error";
-        String message = statusCode.value() == 400 ? "Invalid request body" : ex.getMessage();
-        ErrorResponse error = ErrorResponse.of(message, type, codeFor(statusCode));
+        String message = ex instanceof HttpMessageNotReadableException ? "Invalid request body" : ex.getMessage();
+        String code = ex instanceof MissingServletRequestParameterException ? "missing_parameter" : codeFor(statusCode);
+        ErrorResponse error = ErrorResponse.of(message, type, code);
         return ResponseEntity.status(statusCode).headers(headers).body(error);
     }
 
