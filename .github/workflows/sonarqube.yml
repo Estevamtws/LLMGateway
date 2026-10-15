@@ -39,23 +39,31 @@ permissions:
 jobs:
   Analysis:
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Analyze with SonarQube
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != '' }}
 
         # You can pin the exact commit or the version.
         # uses: SonarSource/sonarqube-scan-action@v1.1.0
         uses: SonarSource/sonarqube-scan-action@7295e71c9583053f5bf40e9d4068a0c974603ec8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # Generate a token on SonarQube, add it to the secrets of this repo with the name SONAR_TOKEN (Settings > Secrets > Actions > add new repository secret)
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}   # add the URL of your instance to the secrets of this repo with the name SONAR_HOST_URL (Settings > Secrets > Actions > add new repository secret)
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}   # Generate a token on SonarQube, add it to the secrets of this repo with the name SONAR_TOKEN (Settings > Secrets > Actions > add new repository secret)
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}   # add the URL of your instance to the secrets of this repo with the name SONAR_HOST_URL (Settings > Secrets > Actions > add new repository secret)
+          SONAR_PROJECT_KEY: ${{ env.SONAR_PROJECT_KEY }}
         with:
           # Additional arguments for the sonarcloud scanner
           args:
             # Unique key of your project. You can find it in SonarQube > [my project] > Project Information (top-right menu)
             # mandatory
-            -Dsonar.projectKey=
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
             # Comma-separated paths to directories containing main source files.
             #-Dsonar.sources= # optional, default is project base directory
             # When you need the analysis to take place in a directory other than the one from which it was launched
